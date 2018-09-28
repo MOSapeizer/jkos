@@ -1,11 +1,11 @@
 {
-    "name": "jarvis/jkos",
+    "name": "Noclaf/jkos",
     "description": "jkos php payment sdk",
     "type": "library",
     "license": "MIT",
     "authors": [
         {
-            "name": "Falcon",
+            "name": "Falcon Ho",
             "email": "endless640c@gmail.com"
         }
     ],
@@ -15,7 +15,7 @@
     },
     "autoload": {
         "psr-4": {
-            "Falcon\\Payment\\": "src/Falcon/Payment"
+            "Noclaf\\Payment\\": "src/Noclaf/Payment"
         }
     }
 }

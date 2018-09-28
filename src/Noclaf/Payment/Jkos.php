@@ -1,5 +1,5 @@
 <?php
-namespace Falcon\Payment;
+namespace Noclaf\Payment;
 
 class Jkos
 {

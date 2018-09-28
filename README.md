@@ -1,4 +1,4 @@
-<p align="center"><img src="https://www.jkos.com/image/logo.svg"></p>
+<p align="center"><img src="https://mitjobs.s3.amazonaws.com/uploads/organization/623/cover_photo/size_fill_600x315_1482463108058.jpg"></p>
 
 [![Latest Stable Version](https://poser.pugx.org/noclaf/jkos/v/stable)](https://packagist.org/packages/noclaf/jkos)
 [![Total Downloads](https://poser.pugx.org/noclaf/jkos/downloads)](https://packagist.org/packages/noclaf/jkos)

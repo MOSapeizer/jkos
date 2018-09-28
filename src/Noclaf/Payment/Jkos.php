@@ -59,16 +59,11 @@ class Jkos implements JsonSerializable {
      * @param $api_key
      * @param $secret
      * @param $store_id
-     * @param $platform_order_id
-     * @param $total_price
-     * @param $final_price
      * @throws \Exception
      */
-    public function __construct( $api_key, $secret, $store_id,
-                                 $platform_order_id, $total_price, $final_price )
+    public function __construct( $api_key, $secret, $store_id )
     {
-        if ( empty( $api_key ) || empty( $secret ) || empty( $store_id ) ||
-            empty( $platform_order_id ) || empty( $total_price ) || $final_price )
+        if ( empty( $api_key ) || empty( $secret ) || empty( $store_id ) )
         {
             throw new InvalidArgumentException( 'InvalidArgument' );
         }
@@ -76,11 +71,6 @@ class Jkos implements JsonSerializable {
         $this->api_key = $api_key;
         $this->secret = $secret;
         $this->store_id = $store_id;
-        $this->platform_order_id = $platform_order_id . '-' . random_int( 10, 99 );
-        $this->total_price = $total_price;
-        $this->final_price = $final_price;
-        $this->payload = json_encode( $this );
-        $this->digest = $this->makeDigest( $this->payload, $secret );
     }
 
     public function enableTestEnv()
@@ -92,12 +82,29 @@ class Jkos implements JsonSerializable {
      * 電商平台呼叫此 API 取得街口付款 payment_url，
      * 電商平台交易序號 為唯一值不可重複;
      * 當訂單付款未完成前，重複呼叫此 API 會回覆 同一街口付款網址。
+     * @param $platform_order_id
+     * @param $total_price
+     * @param $final_price
+     * @return string
      */
-    public function getPaymentUrl()
+    public function getPaymentUrl( $platform_order_id, $total_price, $final_price )
     {
+        if ( empty( $platform_order_id ) || empty( $total_price ) || empty( $final_price ) )
+        {
+            throw new InvalidArgumentException( 'InvalidArgument' );
+        }
+
+        $this->platform_order_id = $platform_order_id;
+        $this->total_price = $total_price;
+        $this->final_price = $final_price;
+
+        $this->payload = json_encode( $this );
+        $this->digest = $this->makeDigest( $this->payload, $this->secret );
+
         $ch = curl_init( ( self::$is_test ) ? self::test_entry_url : self::live_entry_url );
         curl_setopt( $ch, CURLOPT_CUSTOMREQUEST, "POST" );
         curl_setopt( $ch, CURLOPT_POSTFIELDS, $this->payload );
+        curl_setopt( $ch, CURLOPT_TIMEOUT, 10 );
         curl_setopt( $ch, CURLOPT_RETURNTRANSFER, true );
         curl_setopt( $ch, CURLOPT_HTTPHEADER, [
             'Content-Type: application/json',
@@ -114,13 +121,76 @@ class Jkos implements JsonSerializable {
         ( ! empty( $result[ 'result_object' ][ 'payment_url' ] ) ) ? $this->payment_url = $result[ 'result_object' ][ 'payment_url' ] : $this->payment_url = '';
         ( ! empty( $result[ 'result_object' ][ 'qr_img' ] ) ) ? $this->qr_img = $result[ 'result_object' ][ 'qr_img' ] : $this->qr_img = '';
         ( ! empty( $result[ 'result_object' ][ 'qr_timeout' ] ) ) ? $this->qr_timeout = $result[ 'result_object' ][ 'qr_timeout' ] : $this->qr_timeout = '';
+
+        return $this->qr_img;
+    }
+
+    public function refundOrder( $platform_order_id, $refund_amount )
+    {
+        if ( empty( $platform_order_id ) || empty( $refund_amount ) )
+        {
+            throw new InvalidArgumentException( 'InvalidArgument' );
+        }
+
+        $this->payload = json_encode( [
+            'platform_order_id' => $platform_order_id,
+            'refund_amount'     => $refund_amount,
+        ] );
+
+        $this->digest = $this->makeDigest( $this->payload, $this->secret );
+
+        $ch = curl_init( ( self::$is_test ) ? self::test_refund_url : self::live_refund_url );
+        curl_setopt( $ch, CURLOPT_CUSTOMREQUEST, "POST" );
+        curl_setopt( $ch, CURLOPT_POSTFIELDS, $this->payload );
+        curl_setopt( $ch, CURLOPT_TIMEOUT, 10 );
+        curl_setopt( $ch, CURLOPT_RETURNTRANSFER, true );
+        curl_setopt( $ch, CURLOPT_HTTPHEADER, [
+            'Content-Type: application/json',
+            'API-KEY:' . $this->api_key,
+            'DIGEST:' . $this->digest,
+        ] );
+
+        $this->result_json = curl_exec( $ch );
+        ( ! empty( $result[ 'result' ] ) ) ? $this->response_code = $result[ 'result' ] : $this->response_code = '';
+        ( ! empty( $result[ 'message' ] ) ) ? $this->message = $result[ 'message' ] : $this->message = '';
+
+        return $this->result_json;
+    }
+
+    public function queryOrders( $platform_order_ids )
+    {
+        if ( is_array( $platform_order_ids ) )
+        {
+            $get_field = 'platform_order_ids=' . implode( ',', $platform_order_ids );
+        } else
+        {
+            $get_field = 'platform_order_ids=' . $platform_order_ids;
+        }
+
+        $ch = curl_init( ( self::$is_test ) ? self::test_inquiry_url : self::live_inquiry_url . '?' . $get_field );
+        curl_setopt( $ch, CURLOPT_TIMEOUT, 10 );
+        curl_setopt( $ch, CURLOPT_RETURNTRANSFER, true );
+        curl_setopt( $ch, CURLOPT_HTTPHEADER, [
+            'Content-Type: application/json',
+            'API-KEY:' . $this->api_key,
+            'DIGEST:' . $this->digest,
+        ] );
+
+        $this->result_json = curl_exec( $ch );
+        ( ! empty( $result[ 'result' ] ) ) ? $this->response_code = $result[ 'result' ] : $this->response_code = '';
+        ( ! empty( $result[ 'message' ] ) ) ? $this->message = $result[ 'message' ] : $this->message = '';
+
+        return $this->result_json;
+    }
+
+    public function getResultJson()
+    {
+        return $this->result_json;
     }
 
     private function makeDigest( $payload, $secret )
     {
-        $this->digest = hash_hmac( 'sha256', utf8_encode( $payload ), utf8_encode( $secret ) );
-
-        return $this->digest;
+        return hash_hmac( 'sha256', utf8_encode( $payload ), utf8_encode( $secret ) );
     }
 
     /**

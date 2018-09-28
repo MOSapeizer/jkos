@@ -9,7 +9,7 @@
             "email": "endless640c@gmail.com"
         }
     ],
-    "minimum-stability": "stable",
+    "minimum-stability": "1.0.0",
     "require": {
         "php": ">=5.6"
     },

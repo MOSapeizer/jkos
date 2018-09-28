@@ -89,13 +89,16 @@ class Jkos implements JsonSerializable {
      */
     public function getPaymentUrl( $platform_order_id, $total_price, $final_price )
     {
-        $this->checkPaymentArgument( $platform_order_id, $total_price, $final_price );
-        $this->makePaymentPayload( $platform_order_id, $total_price, $final_price );
-        $this->makeDigest( $this->payload, $this->secret );
-        $this->postCurl( ( self::$is_test ) ? self::test_entry_url : self::live_entry_url );
-        $this->savePaymentResult();
+        $this->getPaymentResult( $platform_order_id, $total_price, $final_price );
 
         return $this->payment_url;
+    }
+
+    public function getQrCodeImageUrl( $platform_order_id, $total_price, $final_price )
+    {
+        $this->getPaymentResult( $platform_order_id, $total_price, $final_price );
+
+        return $this->qr_img;
     }
 
     public function refundOrder( $platform_order_id, $refund_amount )
@@ -113,7 +116,7 @@ class Jkos implements JsonSerializable {
     {
         $this->makeQueryPayload( $platform_order_ids );
         $this->makeDigest( $this->payload, $this->secret );
-        $this->getCurl( (( self::$is_test ) ? self::test_inquiry_url : self::live_inquiry_url ) . '?' . $this->payload );
+        $this->getCurl( ( ( self::$is_test ) ? self::test_inquiry_url : self::live_inquiry_url ) . '?' . $this->payload );
         $this->saveQueryResult();
 
         return $this->result_json;
@@ -328,5 +331,19 @@ class Jkos implements JsonSerializable {
         {
             $this->payload = 'platform_order_ids=' . $platform_order_ids;
         }
+    }
+
+    /**
+     * @param $platform_order_id
+     * @param $total_price
+     * @param $final_price
+     */
+    private function getPaymentResult( $platform_order_id, $total_price, $final_price )
+    {
+        $this->checkPaymentArgument( $platform_order_id, $total_price, $final_price );
+        $this->makePaymentPayload( $platform_order_id, $total_price, $final_price );
+        $this->makeDigest( $this->payload, $this->secret );
+        $this->postCurl( ( self::$is_test ) ? self::test_entry_url : self::live_entry_url );
+        $this->savePaymentResult();
     }
 }

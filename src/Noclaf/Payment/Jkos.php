@@ -2,6 +2,7 @@
 
 namespace Noclaf\Payment;
 
+use InvalidArgumentException;
 use JsonSerializable;
 
 class Jkos implements JsonSerializable {
@@ -14,14 +15,25 @@ class Jkos implements JsonSerializable {
     const live_refund_url = 'https://onlinepay.jkopay.com/platform/refund';
     const live_inquiry_url = 'https://onlinepay.jkopay.com/platform/inquiry';
 
-    static private $is_test = true;
+    const response_code = [
+        '000' => '成功',
+        '100' => '訂單不存在',
+        '101' => '此訂單號已付款',
+        '102' => '超過 180 天無法退款',
+        '103' => '退款金額錯誤',
+        '200' => '失敗;參數錯誤',
+        '201' => '失敗;驗證錯誤',
+        '999' => '其他',
+    ];
 
-    private $api_key = 'lzMLNYCmYmnOCUNjkKRLxOyRfjefYUTvXKv4';
-    private $digest;
-    private $secret = 'rsUvuVe_wrpbq3Ulb5FX2hSMkcg9wVYYL4onV6zrYcGL5RasgJJ3xRHri-Dka2DXUf3czxCIXdUhFEXX5eRRrg';
-    private $store_id = 'c1101e2b-b5a6-11e8-9a4e-0ab9182841ae';
+    static private $is_test = false;
 
-    private $platform_order_id;
+    private $api_key = '';
+    private $digest = '';
+    private $secret = '';
+    private $store_id = '';
+
+    private $platform_order_id = '';
     private $currency = 'TWD';
     private $total_price = 0;
     private $final_price = 0;
@@ -35,6 +47,12 @@ class Jkos implements JsonSerializable {
     private $products = [];
 
     private $payload = '';
+    private $result_json = '';
+    private $response_code = '';
+    private $message = '';
+    private $payment_url = '';
+    private $qr_img = '';
+    private $qr_timeout = '';
 
     /**
      * Jkos constructor.
@@ -44,18 +62,30 @@ class Jkos implements JsonSerializable {
      * @param $platform_order_id
      * @param $total_price
      * @param $final_price
+     * @throws \Exception
      */
     public function __construct( $api_key, $secret, $store_id,
                                  $platform_order_id, $total_price, $final_price )
     {
+        if ( empty( $api_key ) || empty( $secret ) || empty( $store_id ) ||
+            empty( $platform_order_id ) || empty( $total_price ) || $final_price )
+        {
+            throw new InvalidArgumentException( 'InvalidArgument' );
+        }
+
         $this->api_key = $api_key;
         $this->secret = $secret;
         $this->store_id = $store_id;
-        $this->platform_order_id = $platform_order_id;
+        $this->platform_order_id = $platform_order_id . '-' . random_int( 10, 99 );
         $this->total_price = $total_price;
         $this->final_price = $final_price;
         $this->payload = json_encode( $this );
         $this->digest = $this->makeDigest( $this->payload, $secret );
+    }
+
+    public function enableTestEnv()
+    {
+        self::$is_test = true;
     }
 
     /**
@@ -75,10 +105,15 @@ class Jkos implements JsonSerializable {
             'DIGEST:' . $this->digest,
         ] );
 
-        $result = curl_exec( $ch );
+        $this->result_json = curl_exec( $ch );
 
-        print_r($result);
+        $result = json_decode( $this->result_json, true );
 
+        ( ! empty( $result[ 'result' ] ) ) ? $this->response_code = $result[ 'result' ] : $this->response_code = '';
+        ( ! empty( $result[ 'message' ] ) ) ? $this->message = $result[ 'message' ] : $this->message = '';
+        ( ! empty( $result[ 'result_object' ][ 'payment_url' ] ) ) ? $this->payment_url = $result[ 'result_object' ][ 'payment_url' ] : $this->payment_url = '';
+        ( ! empty( $result[ 'result_object' ][ 'qr_img' ] ) ) ? $this->qr_img = $result[ 'result_object' ][ 'qr_img' ] : $this->qr_img = '';
+        ( ! empty( $result[ 'result_object' ][ 'qr_timeout' ] ) ) ? $this->qr_timeout = $result[ 'result_object' ][ 'qr_timeout' ] : $this->qr_timeout = '';
     }
 
     private function makeDigest( $payload, $secret )
@@ -97,7 +132,7 @@ class Jkos implements JsonSerializable {
      */
     public function jsonSerialize()
     {
-        return [
+        $payload = [
             'store_id'          => $this->store_id,
             'platform_order_id' => $this->platform_order_id,
             'currency'          => $this->currency,
@@ -106,5 +141,68 @@ class Jkos implements JsonSerializable {
             'escrow'            => $this->escrow,
             'payment_type'      => $this->payment_type,
         ];
+
+        if ( ! empty( $this->valid_time ) ) $payload[ 'valid_time' ] = $this->valid_time;
+        if ( ! empty( $this->confirm_url ) ) $payload[ 'confirm_url' ] = $this->confirm_url;
+        if ( ! empty( $this->result_url ) ) $payload[ 'result_url' ] = $this->result_url;
+        if ( ! empty( $this->result_display_url ) ) $payload[ 'result_display_url' ] = $this->result_display_url;
+        if ( ! empty( $this->products ) ) $payload[ 'products' ] = $this->products;
+
+        return $payload;
+    }
+
+    /**
+     * @param mixed $valid_time
+     */
+    public function setValidTime( $valid_time )
+    {
+        $this->valid_time = $valid_time;
+    }
+
+    /**
+     * @param mixed $confirm_url
+     */
+    public function setConfirmUrl( $confirm_url )
+    {
+        $this->confirm_url = $confirm_url;
+    }
+
+    /**
+     * @param mixed $result_url
+     */
+    public function setResultUrl( $result_url )
+    {
+        $this->result_url = $result_url;
+    }
+
+    /**
+     * @param mixed $result_display_url
+     */
+    public function setResultDisplayUrl( $result_display_url )
+    {
+        $this->result_display_url = $result_display_url;
+    }
+
+    /**
+     * @param array $products
+     */
+    public function setProducts( $products )
+    {
+        $this->products = $products;
+    }
+
+    /**
+     * 000 成功
+     * 100 訂單不存在
+     * 101 此訂單號已付款
+     * 102 超過 180 天無法退款
+     * 103 退款金額錯誤
+     * 200 失敗;參數錯誤
+     * 201 失敗;驗證錯誤
+     * 999 其他
+     */
+    public function getResponseCode()
+    {
+        return ( ! empty( self::response_code[ $this->response_code ] ) ) ? self::response_code[ $this->response_code ] : '其他';
     }
 }

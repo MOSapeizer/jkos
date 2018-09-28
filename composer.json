@@ -1,0 +1,21 @@
+{
+    "name": "jarvis/jkos",
+    "description": "jkos php payment sdk",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Falcon",
+            "email": "endless640c@gmail.com"
+        }
+    ],
+    "minimum-stability": "dev",
+    "require": {
+        "php": ">=7.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Falcon\\Payment\\": "src/Falcon/Payment"
+        }
+    }
+}

@@ -1,4 +1,9 @@
 <?php
+/**
+ * 需要使用 php composer 套件管理
+ * 請複製本範例檔案到您的 composer vendor 同層資料夾環境
+ * 置換 api_key, secret, store_id 後即可開始測試
+ */
 require __DIR__ . '/vendor/autoload.php';
 
 use Noclaf\Payment\Jkos;

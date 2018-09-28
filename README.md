@@ -3,10 +3,11 @@
 請先申請加入廠商即可提供 API 金鑰匙使用
 https://www.jkos.com/client.html
 
-立即使用的語法
+*需要使用 php 套件管理 composer 請預先安裝到開發環境
+
+立即安裝的語法，請先切到您的開發目錄後執行
 <pre>
-cd 您的專案目錄
-composer require noclaf/jkos
+composer require noclaf/jkos // 使用 composer 安裝
 </pre>
 
 PHP 使用語法

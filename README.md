@@ -1,4 +1,4 @@
-## 街口支付 php plugin
+## 街口支付 php plugin v1.0.0
 
 請先申請加入廠商即可提供 API 金鑰匙使用
 https://www.jkos.com/client.html

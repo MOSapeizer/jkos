@@ -1,3 +1,9 @@
+<p align="center"><img src="https://www.jkos.com/image/logo.svg"></p>
+
+[![Latest Stable Version](https://poser.pugx.org/noclaf/jkos/v/stable)](https://packagist.org/packages/noclaf/jkos)
+[![Total Downloads](https://poser.pugx.org/noclaf/jkos/downloads)](https://packagist.org/packages/noclaf/jkos)
+[![License](https://poser.pugx.org/noclaf/jkos/license)](https://packagist.org/packages/noclaf/jkos)
+
 ## 街口支付 php plugin v1.0.0
 
 請先申請加入廠商即可提供 API 金鑰匙使用
